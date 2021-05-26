@@ -4,11 +4,9 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Twig\Environment;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Twig\Error\LoaderError;
-use Twig\Error\RuntimeError;
-use Twig\Error\SyntaxError;
 
 class DefaultController extends AbstractController
 {
@@ -22,36 +20,54 @@ class DefaultController extends AbstractController
 
     }
 
+    /**
+     * @throws TransportExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     */
     public function getHistory(int $limit = 10): array
     {
         $options = [
             'json' => [
                 'jsonrpc' => '2.0',
                 'method' => 'balance.history',
-                'params' => ["limit0" => $limit],
+                'params' => ["limit" => $limit],
                 'id'=> 2
             ]
         ];
-        $response = $this->client->request(
-            'POST',
-            $this->baseUrl,
-            $options
-        );
+        try {
+            $response = $this->client->request(
+                'POST',
+                $this->baseUrl,
+                $options
+            );
+        } catch (TransportExceptionInterface $e) {
+            return ['error' => true];
+        }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode != 200) {
-            return [];
+            return ['error' => true];
         }
         $content = $response->toArray();
         if (isset($content['result'])) {
-            return $content['result'];
-        } else {
-            return [];
+            return ['result' => $content['result']];
+        } else  {
+            return ['error' => true];
         }
 
     }
 
-    public function getBalance(int $userId): float
+    /**
+     * @throws TransportExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     */
+    public function getBalance(int $userId): array
     {
         $options = [
             'json' => [
@@ -61,21 +77,25 @@ class DefaultController extends AbstractController
                 'id'=> 1
             ]
         ];
-        $response = $this->client->request(
-            'POST',
-            $this->baseUrl,
-            $options
-        );
+        try {
+            $response = $this->client->request(
+                'POST',
+                $this->baseUrl,
+                $options
+            );
+        } catch (TransportExceptionInterface $e) {
+            return ['error' => true];
+        }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode != 200) {
-            return false;
+            return ['error' => true];
         }
         $content = $response->toArray();
         if (isset($content['result'])) {
-            return $content['result'];
-        } else {
-            return false;
+            return ['result' => $content['result']];
+        } else  {
+            return ['error' => true];
         }
 
     }
@@ -88,20 +108,17 @@ class DefaultController extends AbstractController
         $userId = 10;
         $history = $this->getHistory(20);
         $userBalance = $this->getBalance($userId);
-        try {
-            return new Response(
-                $twig->render(
-                    'index.html.twig',
-                    [
-                        'history' => ($history != []) ? $history : 'unable to load...' ,
-                        'userBalance' => ($userBalance != false) ? $userBalance : 'unable to load...' ,
-                        'userId' => $userId
-                    ]
-                )
-            );
-        } catch (LoaderError $e) {
-        } catch (RuntimeError $e) {
-        } catch (SyntaxError $e) {
-        }
+
+        return new Response(
+            $twig->render(
+                'index.html.twig',
+                [
+                    'history' => (isset($history['result'])) ? $history['result'] : false ,
+                    'userBalance' => (!isset($userBalance['error'])) ? $userBalance['result'] : 'unable to load...' ,
+                    'userId' => $userId,
+                ]
+            )
+        );
+
     }
 }

@@ -1,0 +1,51 @@
+version: '3.3'
+
+services:
+    site-php-fpm:
+        container_name: 'site_php_fpm'
+        build:
+            context: ./docker/dev
+            dockerfile: php-fpm.docker
+        restart: unless-stopped
+        volumes:
+            - "./app/:/app"
+            - "composer:/root/.composer/cache"
+        networks:
+            - front-net
+            - balance_default
+
+    site-php-cli:
+        container_name: 'site_php_cli'
+        build:
+            context: ./docker/dev
+            dockerfile: php-cli.docker
+        restart: unless-stopped
+        volumes:
+            - "./app/:/app:cached"
+            - "composer:/root/.composer/cache"
+        networks:
+            - front-net
+
+    site-nginx:
+        container_name: 'site_nginx'
+        build:
+            context: ./docker/dev
+            dockerfile: nginx.docker
+        restart: unless-stopped
+        volumes:
+            - "./app/:/app"
+        ports:
+            - 8081:80
+        depends_on:
+            - site-php-fpm
+        networks:
+            - front-net
+
+volumes:
+    composer:
+
+networks:
+    front-net:
+        driver: bridge
+    balance_default:
+        external: true

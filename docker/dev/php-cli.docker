@@ -1,0 +1,20 @@
+FROM php:7.3.13-fpm-alpine
+
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+RUN sed -ri -e 's!memory_limit = 128M!memory_limit = 256M!g' /usr/local/etc/php/php.ini
+
+RUN set -ex \
+	&& apk --no-cache add git postgresql-dev libpq freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev libzip zlib-dev libzip-dev composer \
+	&& docker-php-ext-install pdo_pgsql gd zip
+#    && apk del postgresql-dev freetype-dev libpng-dev libjpeg-turbo-dev
+
+ENV COMPOSER_ALLOW_SUPERUSER 1
+
+RUN wget https://phar.phpunit.de/phpunit-6.5.phar && chmod +x phpunit-6.5.phar && mv phpunit-6.5.phar /usr/local/bin/phpunit
+
+
+WORKDIR /app
+ENV PATH="/root/.composer/vendor/bin:${PATH}"
+
+
+

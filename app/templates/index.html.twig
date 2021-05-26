@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+{% block title %}History of operations{% endblock %}
+{% block body %}
+    <h2>Current balance for user (ID: {{ userId }}) : {{ userBalance }}</h2>
+    <h2>History of operations:</h2>
+    <table>
+        <tr>
+            <td>Date</td>
+            <td>UserID</td>
+            <td>value</td>
+            <td>balance</td>
+        </tr>
+
+    {% for historyRow in history %}
+        <tr>
+            <td>{{ historyRow['created_at']['date'] }}</td>
+            <td>{{ historyRow['user_id'] }}</td>
+            <td>{{ historyRow['value'] }}</td>
+            <td>{{ historyRow['balance'] }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
+

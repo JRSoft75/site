@@ -1,0 +1,11 @@
+FROM php:7.3.13-fpm-alpine
+
+RUN set -ex \
+	&& apk --no-cache add postgresql-dev libpq freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev libzip zlib-dev libzip-dev ${PHPIZE_DEPS}\
+	&& docker-php-ext-install pdo_pgsql gd zip
+#    && pecl install xdebug \
+#    && docker-php-ext-enable xdebug
+#    && apk del postgresql-dev freetype-dev libpng-dev libjpeg-turbo-dev
+
+WORKDIR /app
+
